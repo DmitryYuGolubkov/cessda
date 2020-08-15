@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>jQuery UI Autocomplete - Default functionality</title>
+<!-- NB: google CDN is said to be preferable over code.jquery.com, which may be less stable
+     see https://developers.google.com/speed/libraries -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+<!--
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="/resources/demos/style.css">
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+-->
+
+  <script type="text/javascript">
+
+// DEBUGGING: to not bother the CESSDA server, use shortened pre-fetched list of vocabularies obtained with
+// curl -X GET 'https://vocabularies.cessda.eu/v1/vocabulary'
+var example_response = {
+"CESSDA":{
+  "CdcPublisherNames": {
+    "en(SL)": {
+      "1.0":"/v1/VocabularyDetails/CdcPublisherNames/en/1.0",
+      "2.0":"/v1/VocabularyDetails/CdcPublisherNames/en/2.0",
+      "3.0":"/v1/VocabularyDetails/CdcPublisherNames/en/3.0"
+    }
+  },
+  "TopicClassification":{
+    "en(SL)":{
+      "2.0":"/v1/VocabularyDetails/TopicClassification/en/2.0",
+      "4.0":"/v1/VocabularyDetails/TopicClassification/en/4.0",
+      "4.1":"/v1/VocabularyDetails/TopicClassification/en/4.1"
+    },
+    "fi(TL)":{
+      "2.0.1":"/v1/VocabularyDetails/TopicClassification/fi/2.0.1",
+      "4.0.2":"/v1/VocabularyDetails/TopicClassification/fi/4.0.2",
+      "4.1.1":"/v1/VocabularyDetails/TopicClassification/fi/4.1.1"
+    },
+   "de(TL)":{
+      "2.0.1":"/v1/VocabularyDetails/TopicClassification/de/2.0.1",
+      "4.1.1":"/v1/VocabularyDetails/TopicClassification/de/4.1.1"
+    },
+  }
+},
+"DDI Alliance":{
+  "AggregationMethod":{
+    "en(SL)":{
+      "1.0":"/v1/VocabularyDetails/AggregationMethod/en/1.0",
+      "1.1":"/v1/VocabularyDetails/AggregationMethod/en/1.1"
+    },
+    "da(TL)":{
+      "1.1.1":"/v1/VocabularyDetails/AggregationMethod/da/1.1.1"
+    }
+  },
+  "AnalysisUnit":{
+    "en(SL)":{
+      "1.0":"/v1/VocabularyDetails/AnalysisUnit/en/1.0",
+      "2.0":"/v1/VocabularyDetails/AnalysisUnit/en/2.0",
+      "2.1":"/v1/VocabularyDetails/AnalysisUnit/en/2.1"
+    },
+    "fi(TL)":{
+      "1.0.1":"/v1/VocabularyDetails/AnalysisUnit/fi/1.0.1",
+      "2.0.1":"/v1/VocabularyDetails/AnalysisUnit/fi/2.0.1",
+      "2.0.2":"/v1/VocabularyDetails/AnalysisUnit/fi/2.0.2"
+    },
+    "de(TL)":{
+      "1.0.1":"/v1/VocabularyDetails/AnalysisUnit/de/1.0.1",
+      "2.0.1":"/v1/VocabularyDetails/AnalysisUnit/de/2.0.1"
+    },
+  },
+  "TypeOfNote":{
+    "en(SL)":{
+      "1.0":"/v1/VocabularyDetails/TypeOfNote/en/1.0",
+      "1.1":"/v1/VocabularyDetails/TypeOfNote/en/1.1"
+    }
+  },
+  "TypeOfTelephone":{
+    "en(SL)":{
+      "1.0":"/v1/VocabularyDetails/TypeOfTelephone/en/1.0"
+    }
+  }
+}
+}
+
+term_description = {}; // just a  global variable for testing select event handler
+
+//
+// DEBIGGING: instead of requesting the remote server, just call some anonymous function which uses an example_response 
+//
+//$(function(data){
+        //data = example_response;  // overwrite the response by our example_response
+	// ... parse json and do something ...
+//});
+
+
+// Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at https://vocabularies.cessda.eu/v1/suggest/Vocabulary/TopicClassification/version/1.0/language/en/limit/10/query/geo. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing).
+
+
+//
+// cvlist_url = 'https://vocabularies.cessda.eu/v1/vocabulary'; // blocked by browser as a cross-domain request
+// Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at https://vocabularies.cessda.eu/v1/vocabulary. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing).
+//
+// https://cvm.dataverse.tk/cvlist redirects to https://vocabularies.cessda.eu/v1/vocabulary but is not CORS-blocked by the browser
+// probably due to presence of response.headers.add('Access-Control-Allow-Origin', '*') in https://github.com/ekoi/speeltuin/blob/master/python-scripts/cvm.py
+cvlist_url = 'https://cvm.dataverse.tk/cvlist';
+
+$.getJSON(cvlist_url, function(data) {
+	console.log("successfully got the list of vocabularies from " + cvlist_url + ", data.length =" + data.length);
+
+	let vocabularies = [];
+
+	// go over the JSON and extract vocabulary names
+	for (let vocab_group in data){
+		vocabs = data[vocab_group];
+		console.log('vocabulary group = ' + vocab_group);
+
+		for (let vocab_name in vocabs){
+			vocab_langs = vocabs[vocab_name];
+			console.log('  vocabulary = ' + vocab_name);
+
+			vocabularies.push( vocab_name );
+			term_description[ vocab_name ] = "lorem " + vocab_name + " ipsum"; // TEST populate a global variable
+
+			for (let lang in vocab_langs){
+				vocab_versions = vocab_langs[lang]
+				console.log('    lang = ' + lang);
+			        term_description[ vocab_name ] += " " + lang; // TEST
+
+				for (let vocab_ver in vocab_versions){
+					vocab = vocab_versions[vocab_ver]
+					console.log('      ' + vocab_ver + ' : ' + vocab);
+			                term_description[ vocab_name ] += " " + vocab_ver; // TEST
+				}
+			}
+		}
+	}
+	// DEBUG printout of the JSON response with the list of available vocabularies
+	document.getElementById("some-element-id").innerHTML = 'full list of vocabularies = ' + vocabularies;
+
+	// setup autocomplete callback handler for the vocabulary name field 
+        $('#acInput').autocomplete({
+                source: vocabularies,
+		select: function( evt, ui ) {
+			  console.log("select called, ui.item.label =", ui.item.label, ui);
+			  // ui.item.label, ui.item.value
+	                  document.getElementById("some-other-element-id").innerHTML = "/ " + ui.item.label + " : " + term_description[ ui.item.label ] + " /";
+                        }
+        });
+
+});
+
+
+  </script>
+</head>
+<body>
+    <form>
+        <div class="ui-widget">
+            <label for="acInput">vocabulary name: </label>
+            <input id="acInput"/>
+        </div>
+    </form>
+
+    <hr>
+    <p id="some-element-id">
+    </p>
+    <hr>
+    <p id="some-other-element-id">
+    </p>
+</body>
+</html>

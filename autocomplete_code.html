@@ -1,0 +1,372 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html><head> <title>search term autocomplete prototype</title>
+      <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+<!-- simplistic CSS to get table rows with zebra style https://stackoverflow.com/questions/3084261/alternate-table-row-color-using-css -->
+<style>
+  tr:nth-of-type(odd) { background-color:#ccc; }
+</style>
+
+</head>
+<body> 
+<script>
+
+
+// curl -X GET 'https://cvm.dataverse.tk/?q=CESSDA&voc=AbraCaDabra&code=geo'
+// NB: currently the vocabulary parameter does not seem to be used by the server at all
+
+var example_response_geo = {
+"listOfCodes": [
+  {"url": {"type": "uri", "value": "http://www.ddialliance.org/Specification/DDI-CV/AnalysisUnit#GeographicUnit/1.0"},
+   "code": {"type": "literal", "value": "GeographicUnit"},
+   "prefLabel": {"type": "literal", "value": "Geographic Unit"},
+   "languagePrefLabel": {"type": "literal", "value": "Geographic Unit"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": "Any entity that can be spatially defined as a geographic area, with either natural (physical) or administrative boundaries."}
+  },
+  {"url": {"type": "uri", "value": "http://www.ddialliance.org/Specification/DDI-CV/GeneralDataFormat#Geospatial/2.0"},
+   "code": {"type": "literal", "value": "Geospatial"},
+   "prefLabel": {"type": "literal", "value": "Geospatial"},
+   "languagePrefLabel": {"type": "literal", "value": "Geospatial"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": "Geospatial data are any type of data with spatial coordinates that allow them to be mapped to the Earth's surface. They can represent physical objects, discrete areas or continuous surfaces. Discrete geospatial data are usually represented using vector data consisting of points, lines and polygons, while continuous geospatial data are usually represented by raster data, consisting of a grid of cells that each has its own value. Any number of applications in a wide range of areas produce geospatial data, such as GIS, Remote Sensing equipment, GPS units, archaeological total stations, manual mapping and computer-aided design (CAD), in a number of formats, including images, vector, text, and tabular data. Vector-based geospatial data include tables listing archaeological sites along with their coordinates, text-based files (e.g. XML) containing coordinates and topology for historic road networks, voting figures for political parties by administrative area. Raster-based geospatial data include satellite images, aerial photographs, scanned maps, and digital maps of elevations, vegetation, land-use, sea surface temperatures, air pollution, soil-types, etc."}
+  },
+  {"url": {"type": "uri", "value": "http://www.ddialliance.org/Specification/DDI-CV/DataSourceType#GeographicArea/1.0"},
+   "code": {"type": "literal", "value": "GeographicArea"},
+   "prefLabel": {"type": "literal", "value": "Geographic area"},
+   "languagePrefLabel": {"type": "literal", "value": "Geographic area"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": "An area of the Earth, demarcated for the purposes of administration, politics, environment, etc. The demarcation is identifiable via coordinates or other systems used to identify position precisely."}
+  },
+  {"url": {"type": "uri", "value": "http://www.ddialliance.org/Specification/DDI-CV/SummaryStatisticType#GeometricMean/2.1"},
+   "code": {"type": "literal", "value": "GeometricMean"},
+   "prefLabel": {"type": "literal", "value": "Geometric mean"},
+   "languagePrefLabel": {"type": "literal", "value": "Geometric mean"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": "Average value of all data if extracting the nth root of the product of all (n) values. Rarely used in social sciences."}
+  },
+  {"url": {"type": "uri", "value": "http://www.ddialliance.org/Specification/DDI-CV/AnalysisUnit#GeographicUnit/2.0"},
+   "code": {"type": "literal", "value": "GeographicUnit"},
+   "prefLabel": {"type": "literal", "value": "Geographic unit"},
+   "languagePrefLabel": {"type": "literal", "value": "Geographic unit"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": "Any entity that can be spatially defined as a geographic area, with either natural (physical) or administrative boundaries. For example, data on home sales, landscaping changes, new constructions, or changes in the demographic composition of certain regions or districts."}
+  }],
+"vocab": "AbraCaDabra"
+}
+
+// curl -X GET 'https://cvm.dataverse.tk/?q=CESSDA&voc=TopicClassification&code=empl'
+// NB: there are repeted items with empty description corresponding to https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0
+
+var example_response_empl = {
+"listOfCodes": [
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment.Employment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment.Employment"},
+    "prefLabel": {"type": "literal", "value": "Employment"},
+    "languagePrefLabel": {"type": "literal", "value": "Employment"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": "Data on employment rate and statistics, labour market, job vacancies, job-seeking, job characteristics, employment of certain groups (e.g. youth or minority employment), employment services, career. For pay and remuneration use 'Working conditions'."}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment.Unemployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment.Unemployment"},
+    "prefLabel": {"type": "literal", "value": "Unemployment"},
+    "languagePrefLabel": {"type": "literal", "value": "Unemployment"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": "Data on unemployment rates and statistics, employment programmes and schemes, duration and frequency of unemployment, social and psychological impact of unemployment etc."}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment.EmployeeTraining/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment.EmployeeTraining"},
+    "prefLabel": {"type": "literal", "value": "Employee training"},
+    "languagePrefLabel": {"type": "literal", "value": "Employee training"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": "Internal corporate training and other employee training funded by the employer to increase employee skills and competence. Does not include apprenticeships which is included in 'Vocational education and training'."}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   }],
+"vocab": "TopicClassification"
+};
+
+
+// curl -X GET 'https://cvm.dataverse.tk/?q=CESSDA&voc=TopicClassification&code=dem'
+// NB: example of empty repeated results corresponding to different vocabulary versions
+
+ex_response_dem = {
+"listOfCodes": [
+  {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#Demography/1.0"},
+   "code": {"type": "literal", "value": "Demography"},
+   "prefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "languagePrefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": " "}
+  },
+  {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#Demography/1.0"},
+   "code": {"type": "literal", "value": "Demography"},
+   "prefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "languagePrefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": " "}
+  },
+  {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#Demography/1.0"},
+   "code": {"type": "literal", "value": "Demography"},
+   "prefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "languagePrefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": " "}
+  },
+  {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#Demography/1.0"},
+   "code": {"type": "literal", "value": "Demography"},
+   "prefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "languagePrefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": " "}
+  },
+  {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#Demography/2.0"},
+   "code": {"type": "literal", "value": "Demography"},
+   "prefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "languagePrefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": " "}
+  },
+  {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#Demography/2.0"},
+   "code": {"type": "literal", "value": "Demography"},
+   "prefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "languagePrefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": " "}
+  },
+  {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#Demography/2.0"},
+   "code": {"type": "literal", "value": "Demography"},
+   "prefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "languagePrefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": " "}
+  },
+  {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#Demography/2.0"},
+   "code": {"type": "literal", "value": "Demography"},
+   "prefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "languagePrefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": " "}
+  },
+  {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#Demography/2.0"},
+   "code": {"type": "literal", "value": "Demography"},
+   "prefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "languagePrefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": ""}
+  },
+  {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#Demography/2.0"},
+   "code": {"type": "literal", "value": "Demography"},
+   "prefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "languagePrefLabel": {"type": "literal", "value": "DEMOGRAPHY (POPULATION, VITAL STATISTICS, AND CENSUSES)"},
+   "language": {"type": "literal", "value": "en"},
+   "description": {"type": "literal", "value": ""}
+  }],
+"vocab": "TopicClassification"
+}
+
+// global Map of current search results (in the present API this includes also term description, but should be just light { code : vocabulary } pairs)
+var search_results;
+
+// https://medium.com/@jithinsebastian2/remove-duplicate-objects-from-an-array-of-objects-javascript-es6-9d36f705d376   (Javascript-ES6)
+function getUniqueArray(arr=[], compareProps=[]) {
+	 let modifiedArray= [];
+	 if(compareProps.length === 0 && arr.length > 0)
+	    compareProps.push(...Object.keys(arr[0]));
+	    arr.map(item=> {
+	      if (modifiedArray.length === 0){
+	         modifiedArray.push(item);
+	      } else {
+	         if (!modifiedArray.some(item2=>
+			 compareProps.every(eachProps=> item2[eachProps] === item[eachProps])
+				    )){modifiedArray.push(item);}
+	      }
+	    });
+	 return modifiedArray;
+}
+
+function get_search_results( response ){
+	// CESSDA response currently contains many repetitions - remove them
+	var arr     = response.listOfCodes;
+	var uniqarr = getUniqueArray( arr );
+	// console.log("unique_array = ", uniqarr);
+
+	var results = new Map();
+	for (let item of uniqarr){
+		results[ item.code.value ] = { prefLabel : item.languagePrefLabel.value, descr : item.description.value, url : item.url.value }
+	}
+	return results;
+}
+
+function simple_html_table( data ){
+	var html = '<table width="100%">\n<tr><th>code</th><th>descriptive term</th><th>definition</th></tr>\n';
+	for (var key in data) {
+		  html += '<tr><td class="whatever0">'
+		             + key
+		             + '</td><td class="whatever1">'
+		             + data[key].prefLabel
+		             + '</td><td class="whatever2">'
+		             + data[key].descr
+		             + '</td></tr>';
+	}
+        html += '\n</table>';
+	return html;
+}
+
+
+/*
+ * Function( Object request, Function response( Object data ) )
+ * 
+ * a callback, provides the most flexibility and can be used to connect any data source to Autocomplete, including JSONP. The callback gets two arguments:
+ * 
+ *    - A request object, with a single term property, which refers to the value currently in the text input.
+ *      For example, if the user enters "new yo" in a city field, the Autocomplete term will equal "new yo".
+ *    - A response callback, which expects a single argument: the data to suggest to the user.
+ *      This data should be filtered based on the provided term, and can be in any of the formats described above for simple local data.
+ *      It's important when providing a custom source callback to handle errors during the request. You must always call the response callback
+ *      even if you encounter an error. This ensures that the widget always has the correct state.
+ * 
+ * When filtering data locally, you can make use of the built-in $.ui.autocomplete.escapeRegex function.
+ * It'll take a single string argument and escape all regex characters, making the result safe to pass to new RegExp().
+ */
+function cvQuery( request, response ){
+        var code = request.term
+	console.log('cvQuery called: request.term = ' + request.term + ' request = ', request); // term is the only field of the request
+
+	//var srv  = "https://vocabularies.cessda.eu/";
+	//var path = "v1/suggest/Vocabulary/TopicClassification/version/1.0/language/en/limit/10/query/";
+	//var url  = srv.concat(path);
+	//url += code;
+
+	url = "https://cvm.dataverse.tk/";
+	console.log("will try to read url = " + url);
+
+        $.ajax({
+           url: url,
+           method: 'GET',
+           dataType: "json",
+           // crossDomain: true,  // TODO: try
+           // example:  curl -X GET 'https://cvm.dataverse.tk/?q=CESSDA&voc=AbraCaDabra&code=geo'
+           data: { q : "CESSDA", voc : "TopicClassification", code : code }, // NB: query format for https://cvm.dataverse.tk/ - to be changed for cessda.eu server
+           success: function(data) {
+                       // var locodes = data.listOfCodes;
+                       // console.log("GET successful, locodes = ", locodes);
+                       search_results = get_search_results( data );  // populate global var search_results with unique search results indexed by term codes
+		       var terms = Object.keys(search_results);
+		/*
+                       var terms = [];
+                       $.each(locodes, function(i, item) {
+			  var code = item.code.value;
+                          terms.push(code);
+			  // note, assignment of { key : value } pairs effectively removes repetitions currently sometimes present in CESSDA response
+                          search_results[code] = {
+                             prefLabel:  item.languagePrefLabel.value,
+			     descr:      item.description.value 
+                             url:        item.url.value,
+                          };
+                       });
+	       */
+                       console.log("search_results = ", search_results);
+                       response( terms.sort() );  // set the list of available autocompletion
+
+		        // DEBUGGING - show the full response from the server (which currently includes too much info,
+			// including description of the terms, but in future should be made shorter for scalability)
+			tab_all_terms = simple_html_table( search_results );
+		        document.getElementById("search-result-table").innerHTML = tab_all_terms;
+                    }
+        });
+} 
+
+
+
+$(document).ready(function() {
+    // setup autocomplete callback handler for the term input field
+    $('#termInput').autocomplete({
+            minLength: 3,
+            delay:     200,
+            source:    cvQuery,
+	    select: function(evt, ui){ // function called when an autocomplete item is selected (autocompleteselect event) ui : { ui.item.label, ui.item.value }
+		        var code = ui.item.label;
+		    	console.log("user selected ", code );
+
+		        var selected_term_result = {};
+		        selected_term_result[ code ] = search_results[ code ];
+
+            		var tab_selected_term  = simple_html_table( selected_term_result );
+	    		console.log("table = ", tab_selected_term);
+
+			document.getElementById("search-term-definition").innerHTML = 
+			    "<p><center>Definition of <b>" +  search_results[code].prefLabel + "</b> from <em>"
+			    + search_results[code].url + '</em></center></p>\n' + tab_selected_term;
+                    }
+    });
+});//end doc ready
+
+</script>
+
+
+<body>
+    <form>
+        <div class="ui-widget">
+            <label for="termInput">search term:</label>
+            <input id="termInput"/>
+        </div>
+    </form>
+    <hr>
+    <div id="search-term-definition"></div>
+    <hr>
+    <p><center><em>DEBUGGING: full result of the query (should not be shown to the user for future API compatiblity)</em></center></p>
+    <div id="search-result-table"></div>
+</body></html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>jQuery UI</title>
+
+    <!-- simplistic CSS to get table rows with zebra style https://stackoverflow.com/questions/3084261/alternate-table-row-color-using-css -->
+<style>
+      tr:nth-of-type(odd) {
+	            background-color:#ccc;
+      }
+</style>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script type="text/javascript">
+
+/*
+        $(function() {
+
+            var flowers = ["qwerty", "qwesadfg", "asdfghj", "zxvbnm", "Астра", "Нарцисс", "Роза", "Пион", "Примула",
+			      "Подснежник", "Мак", "Первоцвет", "Петуния", "Фиалка"];
+            
+            $('#acInput').autocomplete({
+                source: flowers
+            })
+        });
+*/
+
+/*
+
+Страница, указанная в serviceUrl получает GET запрос, а в качестве ответа должна отправить данные в формате JSON:
+
+    {
+    query:'Li', // Оригинальный запрос
+    suggestions:['Liberia','Libyan Arab Jamahiriya','Liechtenstein','Lithuania'], // Список подсказок
+    data:['LR','LY','LI','LT'] // Необязательный параметр, список ключей вариантов подсказок. Используется в callback функции
+    }
+
+*/
+
+
+// curl -X GET 'https://cvm.dataverse.tk/?q=CESSDA&voc=TopicClassification&code=empl'
+var example_response_empl = {
+"listOfCodes": [
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment.Employment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment.Employment"},
+    "prefLabel": {"type": "literal", "value": "Employment"},
+    "languagePrefLabel": {"type": "literal", "value": "Employment"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": "Data on employment rate and statistics, labour market, job vacancies, job-seeking, job characteristics, employment of certain groups (e.g. youth or minority employment), employment services, career. For pay and remuneration use 'Working conditions'."}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment.Unemployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment.Unemployment"},
+    "prefLabel": {"type": "literal", "value": "Unemployment"},
+    "languagePrefLabel": {"type": "literal", "value": "Unemployment"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": "Data on unemployment rates and statistics, employment programmes and schemes, duration and frequency of unemployment, social and psychological impact of unemployment etc."}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment.EmployeeTraining/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment.EmployeeTraining"},
+    "prefLabel": {"type": "literal", "value": "Employee training"},
+    "languagePrefLabel": {"type": "literal", "value": "Employee training"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": "Internal corporate training and other employee training funded by the employer to increase employee skills and competence. Does not include apprenticeships which is included in 'Vocational education and training'."}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   },
+   {"url": {"type": "uri", "value": "https://vocabularies.cessda.eu/TopicClassification#LabourAndEmployment/1.0"},
+    "code": {"type": "literal", "value": "LabourAndEmployment"},
+    "prefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "languagePrefLabel": {"type": "literal", "value": "LABOUR AND EMPLOYMENT"},
+    "language": {"type": "literal", "value": "en"},
+    "description": {"type": "literal", "value": ""}
+   }],
+"vocab": "TopicClassification"
+};
+
+// https://medium.com/@jithinsebastian2/remove-duplicate-objects-from-an-array-of-objects-javascript-es6-9d36f705d376   (Javascript-ES6)
+function getUniqueArray(arr=[], compareProps=[]) {
+	 let modifiedArray= [];
+	 if(compareProps.length === 0 && arr.length > 0)
+	    compareProps.push(...Object.keys(arr[0]));
+	    arr.map(item=> {
+	      if (modifiedArray.length === 0){
+	         modifiedArray.push(item);
+	      } else {
+	         if (!modifiedArray.some(item2=>
+			 compareProps.every(eachProps=> item2[eachProps] === item[eachProps])
+				    )){modifiedArray.push(item);}
+	      }
+	    });
+	 return modifiedArray;
+}
+
+global_data = {};
+function populate_global_data( response ){
+	// response contains many repetitions - remove them
+	var arr     = response.listOfCodes;
+	var uniqarr = getUniqueArray( arr );
+	// console.log("unique_array = ", uniqarr);
+
+	for (let item of uniqarr){
+		global_data[ item.code.value ] = { prefLabel : item.languagePrefLabel.value, descr : item.description.value, url : item.url.value }
+	}
+}
+
+function simple_html_table( data ){
+	var html = '<table width="100%">\n<tr><th>code</th><th>descriptive term</th><th>definition</th></tr>\n';
+	for (var key in data) {
+		  html += '<tr><td class="whatever0">'
+		             + key
+		             + '</td><td class="whatever1">'
+		             + data[key].prefLabel
+		             + '</td><td class="whatever2">'
+		             + data[key].descr
+		             + '</td></tr>';
+	}
+        html += '\n</table>';
+	return html;
+}
+
+
+
+$(document).ready(function() {
+	populate_global_data( example_response_empl );
+
+$('#acInput').autocomplete({
+//    serviceUrl: 'service/autocomplete.ashx', // Страница для обработки запросов автозаполнения
+    minChars: 2, // Минимальная длина запроса для срабатывания автозаполнения
+    delimiter: /(,|;)\s*/, // Разделитель для нескольких запросов, символ или регулярное выражение
+    maxHeight: 400, // Максимальная высота списка подсказок, в пикселях
+    width: 300, // Ширина списка
+    zIndex: 9999, // z-index списка
+    deferRequestBy: 0, // Задержка запроса (мсек), на случай, если мы не хотим слать миллион запросов, пока пользователь печатает. Я обычно ставлю 300.
+    params: { country: 'Yes'}, // Дополнительные параметры
+    select: function(data, value){
+	        var code = value.item.label;
+	    	console.log("user selected ", code );
+	        var selected_term_json = {};
+	        selected_term_json[value.item.label] = global_data[ code ];
+
+            	tab_one_term  = simple_html_table( selected_term_json );
+	        console.log("table = ", tab_one_term);
+	    document.getElementById("search-term-definition").innerHTML = "<p><center>Definition of <b>" +  global_data[code].prefLabel + "</b> from <em>"
+		    + global_data[code].url + '</em></center></p>\n' + tab_one_term;
+            }, // Callback функция, срабатывающая на выбор одного из предложенных вариантов,
+    //lookup: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August'] // Список вариантов для локального автозаполнения
+    source: ['January', 'February', 'March', 'LabourAndEmployment.EmployeeTraining', 'April', 'May', 'June', 'July', 'August'] // Список вариантов для локального автозаполнения
+});
+    	tab_all_terms = simple_html_table( global_data );
+        document.getElementById("search-result-table").innerHTML = tab_all_terms;
+});
+
+    </script>
+</head>
+<body>
+    <form>
+        <div class="ui-widget">
+            <label for="acInput">input month: </label>
+            <input id="acInput"/>
+        </div>
+	<hr>
+	<div id="search-term-definition">
+        </div>
+	<hr>
+	<p><center><em>DEBUGGING: full result of the query (should not be shown to the user for future API compatiblity)</em></center></p>
+	<div id="search-result-table">
+        </div>
+    </form>
+</body>
+</html>
