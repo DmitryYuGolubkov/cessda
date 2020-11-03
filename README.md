@@ -44,3 +44,4 @@ Tech guides:
  - https://habr.com/ru/post/42426/ jQuery для начинающих 3 AJAX
  - https://habr.com/ru/post/74713/ jQuery AutoComplete
  - https://api.jqueryui.com/autocomplete/#event-select jQuery Autocomplete Widget
+
